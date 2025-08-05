@@ -1,0 +1,25 @@
+Lancement Produit Mobile App
+
+1. Conception de l'interface
+   Description : Créer les mockups et prototypes
+   Priorité : Élevée
+
+2. Développement iOS
+   Description : Coder l'application native iOS
+   Dépendance : 1
+   Priorité : Élevée
+
+3. Développement Android
+   Description : Coder l'application native Android
+   Dépendance : 1
+   Priorité : Élevée
+
+4. Tests utilisateurs
+   Description : Sessions de test avec 50 utilisateurs
+   Dépendance : 2, 3
+   Priorité : Moyenne
+
+5. Publication sur les stores
+   Description : Soumission Apple Store et Google Play
+   Dépendance : 4
+   Priorité : Élevée 
