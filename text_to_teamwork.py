@@ -43,6 +43,7 @@ class TextToTeamworkConverter:
         
         # Patterns pour identifier les éléments avec numérotation hiérarchique
         self.task_patterns = [
+            r'^[A-Z]{2,}-[A-Z]{2,}-\d+(?:\.\d+)*\s*[-–]\s*(.+)',  # DC-DM-001 - Tâche ou DC-DM-001.1 - Tâche
             r'^\d+(?:\.\d+)*\.?\s*[–-]?\s*(.+)',  # 1. ou 2.5.1 – Tâche (capture la numérotation hiérarchique)
             r'^[-•]\s*(.+)',    # - Tâche ou • Tâche
             r'^[✓✅]\s*(.+)',   # ✓ Tâche ou ✅ Tâche
@@ -59,7 +60,7 @@ class TextToTeamworkConverter:
         ]
         
         # Pattern pour détecter le niveau de hiérarchie
-        self.hierarchy_pattern = r'^(\d+(?:\.\d+)*)'
+        self.hierarchy_pattern = r'^(?:[A-Z]{2,}-[A-Z]{2,}-)?(\d+(?:\.\d+)*)'
         
         self.priority_keywords = {
             'élevée': 'High',
@@ -82,17 +83,30 @@ class TextToTeamworkConverter:
         return 1, ""
     
     def clean_task_name(self, task_text: str) -> str:
-        """Nettoie le nom de la tâche en supprimant la numérotation."""
+        """Nettoie le nom de la tâche en supprimant la numérotation et les codes."""
         for pattern in self.task_patterns:
             match = re.match(pattern, task_text.strip())
             if match:
-                return match.group(1).strip()
-        return task_text.strip()
+                cleaned = match.group(1).strip()
+                # Supprimer les codes de tâches (ex: DC-DM-001.1 -, DC-DM-001 -)
+                cleaned = re.sub(r'^[A-Z]{2,}-[A-Z]{2,}-\d+(?:\.\d+)*\s*[-–]\s*', '', cleaned)
+                return cleaned.strip()
+        
+        # Fallback si aucun pattern ne match, nettoyer quand même les codes
+        cleaned = task_text.strip()
+        cleaned = re.sub(r'^[A-Z]{2,}-[A-Z]{2,}-\d+(?:\.\d+)*\s*[-–]\s*', '', cleaned)
+        return cleaned.strip()
     
     def is_main_task(self, task_text: str) -> bool:
-        """Détermine si c'est une tâche principale (niveau 2 comme 2.5) vs sous-tâche (niveau 3+ comme 2.5.1)."""
-        level, _ = self.get_task_hierarchy_level(task_text)
-        return level == 2  # Niveau 2 = tâche principale (ex: 2.5), niveau 3+ = sous-tâche (ex: 2.5.1)
+        """Détermine si c'est une tâche principale vs sous-tâche selon la numérotation."""
+        level, number = self.get_task_hierarchy_level(task_text)
+        
+        # Si c'est un code avec un seul niveau (ex: DC-DM-001), c'est une tâche principale
+        # Si c'est un code avec sous-niveaux (ex: DC-DM-001.1), c'est une sous-tâche
+        if '.' in number:
+            return False  # Sous-tâche (ex: DC-DM-001.1, 2.5.1)
+        else:
+            return True   # Tâche principale (ex: DC-DM-001, 2)
     
     def should_ignore_line(self, line: str) -> bool:
         """Vérifie si une ligne doit être ignorée car ce n'est pas une vraie tâche."""
@@ -119,6 +133,35 @@ class TextToTeamworkConverter:
         for keyword, priority in self.priority_keywords.items():
             if keyword in text_lower:
                 return priority
+        return None
+    
+    def extract_estimated_time(self, text: str) -> Optional[str]:
+        """Extrait le temps estimé du texte et le formate selon les règles."""
+        # Chercher "Durée estimée : Xh" ou "Durée estimée : X heures" ou "Durée estimée : Xmn"
+        patterns = [
+            r'durée\s+estimée\s*:\s*(\d+)\s*h(?:eure)?s?',  # "Durée estimée : 3h" ou "3 heures"
+            r'durée\s+estimée\s*:\s*(\d+)\s*mn',            # "Durée estimée : 30mn"
+            r'durée\s+estimée\s*:\s*(\d+)\s*min(?:ute)?s?', # "Durée estimée : 30 minutes"
+            r'temps\s+estimé\s*:\s*(\d+)\s*h(?:eure)?s?',   # "Temps estimé : 3h"
+            r'temps\s+estimé\s*:\s*(\d+)\s*mn',             # "Temps estimé : 30mn"
+        ]
+        
+        text_lower = text.lower()
+        
+        # Chercher les heures
+        for pattern in patterns[:2] + [patterns[3]]:  # Patterns pour heures
+            match = re.search(pattern, text_lower)
+            if match:
+                hours = match.group(1)
+                return f"{hours}hr"
+        
+        # Chercher les minutes
+        for pattern in patterns[2:3] + [patterns[4]]:  # Patterns pour minutes
+            match = re.search(pattern, text_lower)
+            if match:
+                minutes = match.group(1)
+                return f"{minutes}mn"
+        
         return None
     
     def _normalize_priorities(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -180,10 +223,16 @@ class TextToTeamworkConverter:
             'dependencies': [],
             'criteria': [],
             'deliverables': [],
-            'risks': []
+            'risks': [],
+            'milestones': [],
+            'estimated_time': None
         }
         
         current_section = 'description'
+        full_text = ' '.join(task_lines)  # Pour extraire le temps estimé
+        
+        # Extraire le temps estimé depuis tout le texte
+        details['estimated_time'] = self.extract_estimated_time(full_text)
         
         for line in task_lines[1:]:  # Skip la première ligne (nom de la tâche)
             line = line.strip()
@@ -219,6 +268,17 @@ class TextToTeamworkConverter:
                 content = re.sub(r'.*risque[s]?\s*:\s*', '', line, flags=re.IGNORECASE)
                 if content:
                     details['risks'].append(content)
+            elif re.search(r'jalon\s+principal', line, re.IGNORECASE):
+                current_section = 'milestones'
+                content = re.sub(r'.*jalon\s+principal\s*:\s*', '', line, flags=re.IGNORECASE)
+                if content:
+                    details['milestones'].append(content)
+            elif re.search(r'durée\s+estimée', line, re.IGNORECASE):
+                # Déjà traité au début, ignorer ici pour éviter duplication
+                continue
+            elif re.search(r'temps\s+estimé', line, re.IGNORECASE):
+                # Déjà traité au début, ignorer ici pour éviter duplication
+                continue
             else:
                 # Ajouter à la section courante
                 details[current_section].append(line)
@@ -233,25 +293,30 @@ class TextToTeamworkConverter:
         if details['description']:
             description_parts.extend(details['description'])
         
-        # Dépendances
-        if details['dependencies']:
-            dep_text = "Dépendance : " + ", ".join(details['dependencies'])
-            description_parts.append(dep_text)
-        
-        # Critères d'acceptation
-        if details['criteria']:
-            criteria_text = "Critère d'acceptation : " + " ".join(details['criteria'])
-            description_parts.append(criteria_text)
+        # Jalons principaux
+        if details.get('milestones'):
+            milestone_text = "Jalon Principal : " + " ".join(details['milestones'])
+            description_parts.append(milestone_text)
         
         # Livrables
         if details['deliverables']:
             deliverable_text = "Livrables : " + ", ".join(details['deliverables'])
             description_parts.append(deliverable_text)
         
-        # Risques
+        # Risques (pour tâches principales)
         if details['risks']:
             risk_text = "Risques : " + ", ".join(details['risks'])
             description_parts.append(risk_text)
+        
+        # Dépendances (pour sous-tâches)
+        if details['dependencies']:
+            dep_text = "Dépendance : " + ", ".join(details['dependencies'])
+            description_parts.append(dep_text)
+        
+        # Critères d'acceptation (pour sous-tâches)
+        if details['criteria']:
+            criteria_text = "Critère d'acceptation : " + " ".join(details['criteria'])
+            description_parts.append(criteria_text)
         
         return ". ".join(description_parts) + ("." if description_parts else "")
     
@@ -332,7 +397,7 @@ class TextToTeamworkConverter:
                 'START DATE': '',
                 'DUE DATE': '',
                 'PRIORITY': details['priority'] or '',
-                'ESTIMATED TIME': '',
+                'ESTIMATED TIME': details.get('estimated_time', '') or '',
                 'TAGS': '',
                 'STATUS': ''
             }
@@ -349,7 +414,7 @@ class TextToTeamworkConverter:
                 'START DATE': '',
                 'DUE DATE': '',
                 'PRIORITY': details['priority'] or '',
-                'ESTIMATED TIME': '',
+                'ESTIMATED TIME': details.get('estimated_time', '') or '',
                 'TAGS': '',
                 'STATUS': ''
             }

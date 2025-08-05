@@ -41,49 +41,63 @@ RÈGLES STRICTES - HIÉRARCHIE TEAMWORK :
 1. TÂCHE PRINCIPALE (TASKLIST) :
    - Va dans la colonne TASKLIST
    - Colonne TASK = VIDE (très important !)
-   - Peut avoir une description
-   - Exemple : TASKLIST="Publicité Digitale", TASK=""
+   - Peut avoir une description consolidée avec jalons, livrables, risques
+   - Exemple : TASKLIST="Logo Standard", TASK=""
 
 2. SOUS-TÂCHES (TASK) :
    - Va dans la colonne TASK
    - Colonne TASKLIST = VIDE
-   - Exemple : TASKLIST="", TASK="Définition du budget"
+   - Description consolidée avec dépendances, critères d'acceptation
+   - Exemple : TASKLIST="", TASK="Analyse du besoin client"
 
-3. CRITÈRES, DÉPENDANCES, LIVRABLES :
-   - NE SONT PAS des tâches séparées !
-   - Doivent être intégrés dans la DESCRIPTION de la tâche concernée
-   - Ne créent JAMAIS de ligne séparée
-
-4. SUPPRESSION NUMÉROTATION :
+3. SUPPRESSION CODES ET NUMÉROTATION :
+   - "DC-DM-001 - Logo Standard" → "Logo Standard"
+   - "DC-DM-001.1 - Analyse du besoin" → "Analyse du besoin"
    - "2.5 - Publicité" → "Publicité"
-   - "2.5.1 - Budget" → "Budget"
+   - Supprimer TOUS les codes alphanumériques et numérotations
+
+4. TEMPS ESTIMÉ (ESTIMATED TIME) :
+   - Extraire "Durée estimée : 3h" → "3hr"
+   - Extraire "Durée estimée : 30mn" → "30mn"
+   - Format stricte : "Xhr" pour heures, "Xmn" pour minutes
+
+5. DESCRIPTION CONSOLIDÉE :
+   - Pour tâches principales : Description + Jalons + Livrables + Risques
+   - Pour sous-tâches : Description + Dépendances + Critères d'acceptation
+   - NE PAS créer de lignes séparées pour ces éléments
+
+6. PRIORITÉS :
+   - "Élevée", "Haute" → "High"
+   - "Moyenne" → "Medium" 
+   - "Faible", "Basse" → "Low"
 
 EXEMPLE CORRECT :
 Input: 
 ```
-Campagne Marketing
-1. Publicité Digitale
-   Description: Gestion des campagnes
-2. Définir budget
-   Critère d'acceptation: Budget validé
-   Priorité: High
+DC-DM-001 - Logo Standard
+Description : Création d'un logo professionnel
+Jalon Principal : Validation finale du logo
+Livrables : Brief client, propositions graphiques
+Risques : Mauvaise interprétation du brief
+
+DC-DM-001.1 - Analyse du besoin client
+Description : Collecte et analyse des besoins
+Dépendance : Signature du contrat
+Priorité : Élevée
+Durée estimée : 3h
 ```
 
 Output: [
-  {"TASKLIST": "Publicité Digitale", "TASK": "", "DESCRIPTION": "Gestion des campagnes", "PRIORITY": ""},
-  {"TASKLIST": "", "TASK": "Définir budget", "DESCRIPTION": "Critère d'acceptation : Budget validé", "PRIORITY": "High"}
+  {"TASKLIST": "Logo Standard", "TASK": "", "DESCRIPTION": "Création d'un logo professionnel. Jalon Principal : Validation finale du logo. Livrables : Brief client, propositions graphiques. Risques : Mauvaise interprétation du brief", "PRIORITY": "", "ESTIMATED_TIME": ""},
+  {"TASKLIST": "", "TASK": "Analyse du besoin client", "DESCRIPTION": "Collecte et analyse des besoins. Dépendance : Signature du contrat", "PRIORITY": "High", "ESTIMATED_TIME": "3hr"}
 ]
-
-ERREURS À ÉVITER :
-❌ Créer des lignes pour "Critère d'acceptation"
-❌ Mettre quelque chose dans TASK quand TASKLIST est rempli
-❌ Créer des tâches pour les descriptions, dépendances, etc.
 
 COLONNES TEAMWORK :
 - TASKLIST : Tâche principale uniquement (TASK vide si rempli)
 - TASK : Sous-tâches uniquement (TASKLIST vide si rempli)
-- DESCRIPTION : Tout le contexte (critères, dépendances, détails)
+- DESCRIPTION : Contexte consolidé selon le type de tâche
 - PRIORITY : High|Medium|Low
+- ESTIMATED_TIME : Format "Xhr" ou "Xmn"
 - Autres colonnes : toujours vides
 
 RETOURNE UNIQUEMENT UN TABLEAU JSON VALIDE."""
@@ -112,14 +126,16 @@ TEXTE À ANALYSER :
 RÈGLES CRITIQUES :
 1. Tâches principales → TASKLIST rempli, TASK = ""
 2. Sous-tâches → TASKLIST = "", TASK rempli  
-3. Critères/dépendances → dans DESCRIPTION, PAS en tâche séparée
-4. Supprimer toute numérotation des noms
-5. Une ligne = une vraie tâche, pas un élément descriptif
+3. Supprimer TOUS les codes (DC-DM-001, DC-DM-001.1, etc.) et numérotation
+4. Extraire temps estimé au format "Xhr" ou "Xmn"
+5. Description consolidée selon type de tâche
+6. Priorités en anglais (High/Medium/Low)
 
 VALIDATION :
 - Vérifier qu'aucune ligne n'a TASKLIST et TASK remplis simultanément
 - Aucune ligne pour "Critère d'acceptation" seul
 - Regrouper tous les détails dans DESCRIPTION
+- Format temps : "3hr" pas "3h", "30mn" pas "30min"
 
 Retourne le JSON :"""
 
@@ -251,6 +267,21 @@ Retourne le JSON :"""
                 validated_task['PRIORITY'] = validated_task['PRIORITY']
             else:
                 validated_task['PRIORITY'] = ''
+            
+            # Valider et normaliser le temps estimé
+            estimated_time = validated_task.get('ESTIMATED_TIME', '').strip()
+            if estimated_time:
+                # Normaliser le format du temps
+                # "3h" → "3hr", "30min" → "30mn", etc.
+                import re
+                time_match = re.search(r'(\d+)\s*(h|hr|hour|heure|heures|mn|min|minutes?)', estimated_time.lower())
+                if time_match:
+                    number = time_match.group(1)
+                    unit = time_match.group(2)
+                    if unit in ['h', 'hr', 'hour', 'heure', 'heures']:
+                        validated_task['ESTIMATED_TIME'] = f"{number}hr"
+                    elif unit in ['mn', 'min', 'minute', 'minutes']:
+                        validated_task['ESTIMATED_TIME'] = f"{number}mn"
             
             validated_tasks.append(validated_task)
         
