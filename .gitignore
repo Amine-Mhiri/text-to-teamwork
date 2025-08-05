@@ -145,7 +145,7 @@ dmypy.json
 cython_debug/
 
 # Streamlit
-.streamlit/
+.streamlit/secrets.toml
 
 # Fichiers temporaires de test
 *test*.xlsx
