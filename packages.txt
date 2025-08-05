@@ -1,2 +1,1 @@
-# Packages système pour Streamlit Cloud (si nécessaire)
-# Généralement vide pour notre application 
+ 
