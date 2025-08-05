@@ -51,7 +51,7 @@ class TextToTeamworkConverter:
         
         # Patterns à ignorer (ne sont pas des tâches)
         self.ignore_patterns = [
-            r'critère\s*d[\'\'']acceptation',
+            r'critère\s*d[\'\'""]acceptation',
             r'dépendance\s*:',
             r'livrable\s*:',
             r'risque\s*:',
