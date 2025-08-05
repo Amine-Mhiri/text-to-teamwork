@@ -71,7 +71,7 @@ Campagne Marketing
 
 Output: [
   {"TASKLIST": "Publicité Digitale", "TASK": "", "DESCRIPTION": "Gestion des campagnes", "PRIORITY": ""},
-  {"TASKLIST": "", "TASK": "Définir budget", "DESCRIPTION": "Critère d'acceptation : Budget validé", "PRIORITY": "Élevée"}
+  {"TASKLIST": "", "TASK": "Définir budget", "DESCRIPTION": "Critère d'acceptation : Budget validé", "PRIORITY": "High"}
 ]
 
 ERREURS À ÉVITER :
@@ -83,7 +83,7 @@ COLONNES TEAMWORK :
 - TASKLIST : Tâche principale uniquement (TASK vide si rempli)
 - TASK : Sous-tâches uniquement (TASKLIST vide si rempli)
 - DESCRIPTION : Tout le contexte (critères, dépendances, détails)
-- PRIORITY : Élevée|Moyenne|Faible
+- PRIORITY : High|Medium|Low
 - Autres colonnes : toujours vides
 
 RETOURNE UNIQUEMENT UN TABLEAU JSON VALIDE."""
@@ -241,11 +241,11 @@ Retourne le JSON :"""
             # Valider les priorités
             priority = validated_task['PRIORITY'].lower()
             if priority in ['élevée', 'haute', 'high', 'elevee', 'urgent', 'urgente']:
-                validated_task['PRIORITY'] = 'Élevée'
+                validated_task['PRIORITY'] = 'High'
             elif priority in ['moyenne', 'medium', 'moyen', 'normale', 'normal']:
-                validated_task['PRIORITY'] = 'Moyenne'
+                validated_task['PRIORITY'] = 'Medium'
             elif priority in ['faible', 'basse', 'low', 'bas']:
-                validated_task['PRIORITY'] = 'Faible'
+                validated_task['PRIORITY'] = 'Low'
             elif priority:
                 # Garder tel quel si pas reconnu mais pas vide
                 validated_task['PRIORITY'] = validated_task['PRIORITY']

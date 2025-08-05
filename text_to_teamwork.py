@@ -62,14 +62,14 @@ class TextToTeamworkConverter:
         self.hierarchy_pattern = r'^(\d+(?:\.\d+)*)'
         
         self.priority_keywords = {
-            'élevée': 'Élevée',
-            'haute': 'Élevée', 
-            'high': 'Élevée',
-            'moyenne': 'Moyenne',
-            'medium': 'Moyenne',
-            'faible': 'Faible',
-            'basse': 'Faible',
-            'low': 'Faible'
+            'élevée': 'High',
+            'haute': 'High', 
+            'high': 'High',
+            'moyenne': 'Medium',
+            'medium': 'Medium',
+            'faible': 'Low',
+            'basse': 'Low',
+            'low': 'Low'
         }
         
     def get_task_hierarchy_level(self, task_text: str) -> Tuple[int, str]:
