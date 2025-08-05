@@ -97,7 +97,7 @@ with st.sidebar:
     
     1. Première tâche
        Description : Détails de la tâche
-       Priorité : Élevée
+       Priorité : High
     
     2. Deuxième tâche
        Dépendance : 1
@@ -132,6 +132,7 @@ with col1:
     # Zone de texte pour l'input
     input_text = st.text_area(
         "Collez votre texte structuré ici :",
+        value=st.session_state.get('example_text', ''),
         height=400,
         placeholder="""Exemple :
 
@@ -139,7 +140,7 @@ Campagne Réseaux Sociaux
 
 1. Définir le concept
    Description : Créer le thème visuel
-   Priorité : Élevée
+   Priorité : High
    Critère : Validation équipe
 
 2. Créer calendrier éditorial
@@ -150,7 +151,7 @@ Campagne Réseaux Sociaux
     
     # Exemple prédéfini
     if st.button("📄 Charger l'exemple", type="secondary"):
-        sample_text = """Campagne Réseaux Sociaux – Liste de Tâches
+        st.session_state.example_text = """Campagne Réseaux Sociaux – Liste de Tâches
 
 📌 Objectif général :
 Planifier et lancer une campagne de visibilité sur Instagram et LinkedIn.
@@ -160,17 +161,19 @@ Jalon Principal : Lancement du premier post sponsorisé
 ✅ Liste des Tâches :
 1. Définir le concept de la campagne  
    Description : Trouver un message central et un thème visuel  
+   Priorité : High
    Critère d'acceptation : Concept validé par l'équipe
 
 2. Créer le calendrier éditorial  
    Description : Planifier les publications sur 4 semaines  
    Dépendance : 1  
-   Priorité : Élevée  
+   Priorité : Medium
    Critère d'acceptation : Calendrier complet avec visuels et dates
 
 3. Rédiger les textes des publications  
    Description : Écrire les textes adaptés à chaque plateforme  
    Dépendance : 2  
+   Priorité : High
    Critère d'acceptation : Textes sans fautes et optimisés SEO"""
         st.rerun()
 

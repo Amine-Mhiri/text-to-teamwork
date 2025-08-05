@@ -66,7 +66,7 @@ Campagne Marketing
    Description: Gestion des campagnes
 2. Définir budget
    Critère d'acceptation: Budget validé
-   Priorité: Élevée
+   Priorité: High
 ```
 
 Output: [
