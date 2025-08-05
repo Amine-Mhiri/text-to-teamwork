@@ -149,9 +149,13 @@ Campagne Réseaux Sociaux
         help="Collez votre texte avec tâches hiérarchisées"
     )
     
-    # Exemple prédéfini
-    if st.button("📄 Charger l'exemple", type="secondary"):
-        st.session_state.example_text = """Campagne Réseaux Sociaux – Liste de Tâches
+    # Boutons d'action
+    col_btn1, col_btn2 = st.columns(2)
+    
+    with col_btn1:
+        # Exemple prédéfini
+        if st.button("📄 Charger l'exemple", type="secondary", use_container_width=True):
+            st.session_state.example_text = """Campagne Réseaux Sociaux – Liste de Tâches
 
 📌 Objectif général :
 Planifier et lancer une campagne de visibilité sur Instagram et LinkedIn.
@@ -175,20 +179,34 @@ Jalon Principal : Lancement du premier post sponsorisé
    Dépendance : 2  
    Priorité : High
    Critère d'acceptation : Textes sans fautes et optimisés SEO"""
-        st.rerun()
+            st.rerun()
+    
+    with col_btn2:
+        # Bouton Générer
+        generate_clicked = st.button("🚀 Générer", type="primary", use_container_width=True, disabled=not input_text.strip())
+        if generate_clicked:
+            st.session_state.force_generate = True
 
 with col2:
     st.header("📊 Prévisualisation")
     
-    if input_text:
+    # Vérifier si on doit générer (soit texte présent, soit bouton cliqué)
+    should_generate = input_text and (input_text.strip() or st.session_state.get('force_generate', False))
+    
+    if should_generate:
         try:
+            # Reset force generate flag
+            if 'force_generate' in st.session_state:
+                del st.session_state.force_generate
+            
             # Prévisualisation avec indication du mode
             if api_key and use_ai:
                 st.info("🧠 **Parsing avec IA** - Précision maximale activée")
             else:
                 st.info("🔧 **Parsing classique** - Ajoutez une clé OpenAI pour une précision optimale")
             
-            preview_df = converter.preview_conversion(input_text)
+            with st.spinner("🔄 Génération en cours..."):
+                preview_df = converter.preview_conversion(input_text)
             
             if not preview_df.empty:
                 st.markdown('<div class="success-box">✅ Conversion réussie ! Prévisualisation ci-dessous :</div>', unsafe_allow_html=True)
@@ -215,65 +233,64 @@ with col2:
                     project_name = preview_df.iloc[0]['TASKLIST'] if not preview_df.empty else "N/A"
                     st.metric("Projet", project_name[:15] + "..." if len(project_name) > 15 else project_name)
                 
+                # Stocker le résultat pour le téléchargement
+                st.session_state.preview_result = preview_df
+                
             else:
                 st.markdown('<div class="warning-box">⚠️ Aucune tâche détectée. Vérifiez le format de votre texte.</div>', unsafe_allow_html=True)
                 
         except Exception as e:
             st.error(f"Erreur lors de la prévisualisation : {str(e)}")
     else:
-        st.info("👆 Entrez votre texte à gauche pour voir la prévisualisation")
+        st.info("👆 Entrez votre texte à gauche et cliquez sur 'Générer' pour voir la prévisualisation")
 
 # Section de téléchargement
-if input_text:
+if st.session_state.get('preview_result') is not None and not st.session_state.preview_result.empty:
     st.header("💾 Téléchargement")
     
     col_dl1, col_dl2, col_dl3 = st.columns([1, 1, 1])
     
     with col_dl2:
-        if st.button("📥 Générer et télécharger Excel", type="primary", use_container_width=True):
-            try:
-                # Créer le fichier Excel en mémoire
-                output = io.BytesIO()
+        try:
+            # Utiliser le résultat déjà généré
+            tasks_df = st.session_state.preview_result
+            
+            # Créer le fichier Excel en mémoire
+            output = io.BytesIO()
+            
+            # Sauvegarder en Excel dans le buffer
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                tasks_df.to_excel(writer, index=False, sheet_name='Teamwork Import')
                 
-                # Convertir en DataFrame
-                tasks_df = converter.preview_conversion(input_text)
-                
-                if not tasks_df.empty:
-                    # Sauvegarder en Excel dans le buffer
-                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        tasks_df.to_excel(writer, index=False, sheet_name='Teamwork Import')
-                        
-                        # Ajuster les colonnes
-                        worksheet = writer.sheets['Teamwork Import']
-                        for idx, col in enumerate(tasks_df.columns):
-                            max_length = max(
-                                tasks_df[col].astype(str).map(len).max(),
-                                len(col)
-                            )
-                            worksheet.column_dimensions[chr(65 + idx)].width = min(max_length + 2, 50)
-                    
-                    # Préparer le téléchargement
-                    output.seek(0)
-                    
-                    # Nom du projet pour le fichier
-                    project_name = tasks_df.iloc[0]['TASKLIST'] if not tasks_df.empty else "Projet"
-                    filename = f"{project_name.replace(' ', '_')}_Teamwork.xlsx"
-                    
-                    st.download_button(
-                        label="📥 Télécharger le fichier Excel",
-                        data=output.getvalue(),
-                        file_name=filename,
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        use_container_width=True
+                # Ajuster les colonnes
+                worksheet = writer.sheets['Teamwork Import']
+                for idx, col in enumerate(tasks_df.columns):
+                    max_length = max(
+                        tasks_df[col].astype(str).map(len).max(),
+                        len(col)
                     )
-                    
-                    st.success("✅ Fichier Excel généré avec succès !")
-                    
-                else:
-                    st.error("❌ Impossible de générer le fichier : aucune tâche détectée")
-                    
-            except Exception as e:
-                st.error(f"❌ Erreur lors de la génération : {str(e)}")
+                    worksheet.column_dimensions[chr(65 + idx)].width = min(max_length + 2, 50)
+            
+            # Préparer le téléchargement
+            output.seek(0)
+            
+            # Nom du projet pour le fichier
+            project_name = tasks_df.iloc[0]['TASKLIST'] if not tasks_df.empty else "Projet"
+            filename = f"{project_name.replace(' ', '_')}_Teamwork.xlsx"
+            
+            st.download_button(
+                label="📥 Télécharger Excel",
+                data=output.getvalue(),
+                file_name=filename,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                type="primary"
+            )
+            
+            st.success("✅ Fichier Excel prêt au téléchargement !")
+            
+        except Exception as e:
+            st.error(f"❌ Erreur lors de la génération : {str(e)}")
 
 # Section d'aide avancée
 with st.expander("🔧 Aide avancée et nouveautés IA"):
