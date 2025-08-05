@@ -1,0 +1,178 @@
+========================================
+EXEMPLES POUR LE MODE IA
+========================================
+
+=== EMAIL DE PROJET ===
+
+De: chef@entreprise.com
+À: equipe@entreprise.com
+Objet: Lancement campagne été 2024
+
+Salut l'équipe,
+
+Voici ce qu'on doit faire pour la campagne été :
+
+1) Créer les visuels Instagram → Marie (URGENT)
+2) Rédiger les posts Facebook → Jean  
+3) Lancer les pubs Google Ads → Sophie (dépend des visuels)
+4) Analyser les résultats fin juin
+
+Budget: 5000€
+Deadline: 15 juin
+
+Merci !
+
+=== NOTES DE RÉUNION ===
+
+REUNION PROJET SITE WEB - 12/01/2024
+
+Participants: Marie, Jean, Sophie, Paul
+
+DECISIONS:
+- Refonte complète du site
+- Design moderne et responsive 
+- Nouveau système de commande
+
+TODO URGENT:
+• Audit de l'existant (Paul) - cette semaine
+• Wireframes nouvelles pages (Marie) - priorité haute
+• Benchmark concurrence (Sophie)
+• Chiffrage développement (Jean) - après wireframes
+
+RISQUES:
+- Délai serré pour Noël
+- Budget limité
+- Migration données complexe
+
+=== BRAINSTORM PRODUIT ===
+
+💡 NOUVELLE APP MOBILE 💡
+
+Idées à développer:
+
+🚀 MVP Version 1:
+- Login/register users
+- Profile management  
+- Core feature: task tracking
+- Basic notifications
+
+⭐ Version 2 (plus tard):
+- Social features
+- Advanced analytics
+- Premium subscriptions
+- Multi-team support
+
+❗ BLOQUANTS:
+→ Choix de la techno (React Native vs Flutter)
+→ Design system à créer
+→ Backend API à développer
+→ Tests sur différents devices
+
+Équipe:
+- Dev mobile: Alex
+- UX/UI: Sarah
+- Backend: Tom
+- QA: Lisa
+
+=== CAHIER DES CHARGES INFORMEL ===
+
+Projet: Chatbot Service Client
+
+Objectif: Automatiser 70% des demandes clients
+
+Fonctionnalités minimum:
+* Répondre aux questions fréquentes
+* Escalader vers humain si complexe  
+* Intégration avec CRM existant
+* Dashboard de stats pour management
+
+Timeline souhaitée:
+- Analyse besoins: 2 semaines
+- Dev prototype: 1 mois
+- Tests internes: 2 semaines  
+- Formation équipe: 1 semaine
+- Go live: début Q2
+
+Contraintes:
+- Multilingue (FR, EN, ES)
+- Respect RGPD
+- Disponible 24/7
+- Response time < 3 secondes
+
+=== MESSAGE SLACK ===
+
+@channel Nouveau projet e-learning 🎓
+
+Contexte: On doit créer une plateforme formation en ligne
+
+Phase 1 - Recherche:
+◦ Étude marché concurrent 
+◦ Interviews utilisateurs (20 min)
+◦ Définition personas
+◦ Benchmark techniques
+
+Phase 2 - Conception:
+◦ Architecture plateforme
+◦ UX/UI design
+◦ Prototype interactif
+◦ Tests utilisabilité
+
+Phase 3 - Développement:
+◦ Setup environnement dev
+◦ Développement frontend React
+◦ API backend Node.js
+◦ Intégration paiement Stripe
+
+Phase 4 - Lancement:
+◦ Tests de charge
+◦ Formation support client
+◦ Campagne marketing
+◦ Monitoring post-launch
+
+Deadline: fin septembre
+Budget: 50k€
+
+Qui est dispo ? 🙋‍♀️🙋‍♂️
+
+=== DOCUMENTATION TECHNIQUE ===
+
+MIGRATION BASE DE DONNÉES
+
+Contexte: Passage de MySQL vers PostgreSQL
+
+Étapes migration:
+
+1. PREPARATION
+   - Audit données existantes  
+   - Mapping schémas source → cible
+   - Scripts de transformation
+   - Tests sur environnement staging
+
+2. EXECUTION  
+   - Export données MySQL
+   - Nettoyage et validation
+   - Import PostgreSQL
+   - Vérification intégrité
+
+3. VALIDATION
+   - Tests fonctionnels complets
+   - Performance benchmarks
+   - Validation métier
+   - Rollback plan ready
+
+4. GO-LIVE
+   - Maintenance window 2h
+   - Switch DNS
+   - Monitoring alertes
+   - Communication équipes
+
+RISQUES IDENTIFIÉS:
+⚠️ Perte de données
+⚠️ Downtime prolongé  
+⚠️ Performance dégradée
+⚠️ Incompatibilités applicatives
+
+PLAN B:
+→ Rollback automatique si échec
+→ Sync en temps réel pendant transition
+→ Équipe d'astreinte disponible 

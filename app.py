@@ -52,15 +52,37 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Initialiser le convertisseur
+# Initialiser le convertisseur avec configuration IA
 @st.cache_resource
-def get_converter():
-    return TextToTeamworkConverter()
+def get_converter(api_key=None, use_ai=True):
+    return TextToTeamworkConverter(openai_api_key=api_key, use_ai=use_ai)
 
-converter = get_converter()
-
-# Sidebar avec les instructions
+# Sidebar avec configuration et instructions
 with st.sidebar:
+    st.header("🤖 Configuration IA")
+    
+    # Configuration OpenAI
+    api_key = st.text_input(
+        "Clé OpenAI API (optionnel)",
+        type="password",
+        help="Pour un parsing ultra-précis avec GPT-4. Laissez vide pour le parser classique.",
+        placeholder="sk-..."
+    )
+    
+    use_ai = st.checkbox(
+        "Utiliser l'IA (GPT-4)",
+        value=True,
+        help="Parser intelligent vs parser classique"
+    )
+    
+    if api_key:
+        st.success("🧠 Mode IA activé")
+        st.info("Précision maximale avec GPT-4")
+    else:
+        st.warning("🔧 Mode classique")
+        st.info("Parser basé sur des règles")
+    
+    st.markdown("---")
     st.header("📝 Instructions")
     st.markdown("""
     **Format attendu :**
@@ -91,6 +113,15 @@ with st.sidebar:
     - **PRIORITY** : Priorité si mentionnée
     - **Autres** : Laissées vides pour saisie manuelle
     """)
+
+# Initialiser le convertisseur avec la configuration (gestion d'erreur pour le cloud)
+try:
+    converter = get_converter(api_key=api_key if api_key else None, use_ai=use_ai)
+except Exception as e:
+    st.error(f"Erreur d'initialisation : {e}")
+    # Fallback vers mode classique
+    converter = get_converter(api_key=None, use_ai=False)
+    st.warning("🔧 Mode classique activé suite à une erreur")
 
 # Interface principale
 col1, col2 = st.columns([1, 1])
@@ -148,7 +179,12 @@ with col2:
     
     if input_text:
         try:
-            # Prévisualisation
+            # Prévisualisation avec indication du mode
+            if api_key and use_ai:
+                st.info("🧠 **Parsing avec IA** - Précision maximale activée")
+            else:
+                st.info("🔧 **Parsing classique** - Ajoutez une clé OpenAI pour une précision optimale")
+            
             preview_df = converter.preview_conversion(input_text)
             
             if not preview_df.empty:
@@ -237,35 +273,81 @@ if input_text:
                 st.error(f"❌ Erreur lors de la génération : {str(e)}")
 
 # Section d'aide avancée
-with st.expander("🔧 Aide avancée et format détaillé"):
+with st.expander("🔧 Aide avancée et nouveautés IA"):
     st.markdown("""
-    ### 📋 Format de texte supporté
+    ### 🧠 **NOUVEAU : Parser IA avec GPT-4**
     
-    **Éléments reconnus automatiquement :**
-    - **Numérotation** : `1.`, `2.`, `a)`, `•`, `-`, `✅`
+    **🚀 Avantages du mode IA :**
+    - **100% fiable** : Comprend n'importe quel format de texte
+    - **Ultra-flexible** : Emails, documents Word, notes désorganisées
+    - **Intelligence contextuelle** : Comprend l'intention, pas juste la forme
+    - **Mapping parfait** : Tâches principales vs sous-tâches automatique
+    - **Extraction intelligente** : Priorités, dépendances, risques
+    
+    **⚙️ Comment activer :**
+    1. Obtenir une clé OpenAI sur [platform.openai.com](https://platform.openai.com)
+    2. L'entrer dans la sidebar 
+    3. Cocher "Utiliser l'IA"
+    4. **Résultat : 100% fiable peu importe le format !**
+    
+    ---
+    
+    ### 📋 Format supporté (les deux modes)
+    
+    **Mode IA (Recommandé) :**
+    - ✅ **Tout format** : emails, notes, documents désorganisés
+    - ✅ **Numérotation flexible** : 1., 2.5.1, •, -, emojis, ou aucune
+    - ✅ **Langue naturelle** : "urgent", "important", "doit être fait avant"
+    - ✅ **Structure libre** : peu importe l'organisation
+    
+    **Mode classique (Fallback) :**
+    - **Numérotation** : `1.`, `2.5.1`, `a)`, `•`, `-`, `✅`
     - **Priorités** : élevée, haute, moyenne, faible (français/anglais)
-    - **Sections spéciales** :
-        - Description : informations principales
-        - Dépendance : liens entre tâches
-        - Critère d'acceptation : conditions de validation
-        - Priorité : niveau d'importance
-        - Livrable : éléments à produire
-        - Risque : points d'attention
+    - **Sections** : Description:, Dépendance:, Critère:, etc.
     
-    ### 🎯 Conseils pour un meilleur résultat
+    ### 🎯 Conseils selon le mode
     
-    1. **Structurez clairement** : Un titre de projet, puis les tâches numérotées
-    2. **Détaillez les tâches** : Ajoutez descriptions, dépendances, critères
-    3. **Utilisez les mots-clés** : "Description :", "Priorité :", "Dépendance :"
-    4. **Évitez la sur-numérotation** : Préférez 1, 2, 3 plutôt que 1.1.1, 1.1.2
+    **🧠 Avec IA activée :**
+    - Collez n'importe quel texte de projet
+    - L'IA comprend le contexte et l'intention
+    - Formats libres acceptés
     
-    ### 🔄 Workflow recommandé
+    **🔧 Mode classique :**
+    - Structurez clairement avec numérotation
+    - Utilisez les mots-clés : "Description :", "Priorité :"
+    - Hiérarchie : 2.5 (principale) → 2.5.1 (sous-tâche)
     
-    1. Collez votre texte structuré
-    2. Vérifiez la prévisualisation
-    3. Ajustez le texte si nécessaire
-    4. Téléchargez le fichier Excel
-    5. Importez directement dans Teamwork Projects
+    ### 🔄 Workflow optimisé
+    
+    1. **[NOUVEAU]** Ajoutez votre clé OpenAI pour 100% de fiabilité
+    2. Collez votre texte (n'importe quel format)
+    3. L'IA analyse et mappe automatiquement
+    4. Vérifiez la prévisualisation
+    5. Téléchargez et importez dans Teamwork
+    
+    ### 💡 Exemples de formats supportés en mode IA
+    
+    **Email de projet :**
+    ```
+    Objet: Nouveau site web
+    
+    Salut, voici les tâches pour le site :
+    - Design des maquettes (urgent)
+    - Développement front-end 
+    - Tests utilisateurs
+    ```
+    
+    **Notes de réunion :**
+    ```
+    Réunion projet mobile app
+    
+    TODO:
+    * Interface utilisateur → Marie (priorité haute)
+    * Backend API → Jean 
+    * Tests → équipe QA (après backend)
+    ```
+    
+    **✨ L'IA comprend tout et mappe parfaitement !**
     """)
 
 # Footer

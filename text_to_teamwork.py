@@ -4,6 +4,7 @@ import openai
 import os
 from typing import Dict, List, Tuple, Optional
 from dotenv import load_dotenv
+from ai_parser import AITaskParser
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -16,12 +17,29 @@ class TextToTeamworkConverter:
     TASKLIST | TASK | DESCRIPTION | ASSIGN TO | START DATE | DUE DATE | PRIORITY | ESTIMATED TIME | TAGS | STATUS
     """
     
-    def __init__(self):
+    def __init__(self, openai_api_key: Optional[str] = None, use_ai: bool = True):
         self.columns = [
             'TASKLIST', 'TASK', 'DESCRIPTION', 'ASSIGN TO', 
             'START DATE', 'DUE DATE', 'PRIORITY', 'ESTIMATED TIME', 
             'TAGS', 'STATUS'
         ]
+        
+        # Configuration IA
+        self.use_ai = use_ai
+        self.ai_parser = None
+        
+        if use_ai:
+            try:
+                self.ai_parser = AITaskParser(api_key=openai_api_key)
+                # Tester la connexion
+                if not self.ai_parser.is_available():
+                    print("⚠️ Clé OpenAI manquante - Utilisation du parser classique")
+                    self.use_ai = False
+                    self.ai_parser = None
+            except Exception as e:
+                print(f"⚠️ Erreur initialisation IA - Utilisation du parser classique: {e}")
+                self.use_ai = False
+                self.ai_parser = None
         
         # Patterns pour identifier les éléments avec numérotation hiérarchique
         self.task_patterns = [
@@ -29,6 +47,15 @@ class TextToTeamworkConverter:
             r'^[-•]\s*(.+)',    # - Tâche ou • Tâche
             r'^[✓✅]\s*(.+)',   # ✓ Tâche ou ✅ Tâche
             r'^[a-zA-Z]\)\s*(.+)', # a) Tâche
+        ]
+        
+        # Patterns à ignorer (ne sont pas des tâches)
+        self.ignore_patterns = [
+            r'critère\s*d[\'\'']acceptation',
+            r'dépendance\s*:',
+            r'livrable\s*:',
+            r'risque\s*:',
+            r'description\s*:',
         ]
         
         # Pattern pour détecter le niveau de hiérarchie
@@ -67,6 +94,25 @@ class TextToTeamworkConverter:
         level, _ = self.get_task_hierarchy_level(task_text)
         return level == 2  # Niveau 2 = tâche principale (ex: 2.5), niveau 3+ = sous-tâche (ex: 2.5.1)
     
+    def should_ignore_line(self, line: str) -> bool:
+        """Vérifie si une ligne doit être ignorée car ce n'est pas une vraie tâche."""
+        line_lower = line.lower().strip()
+        
+        # Ignorer les lignes vides ou très courtes
+        if len(line_lower) < 3:
+            return True
+        
+        # Vérifier les patterns à ignorer
+        for pattern in self.ignore_patterns:
+            if re.search(pattern, line_lower, re.IGNORECASE):
+                return True
+        
+        # Ignorer les lignes qui commencent par des emojis de description
+        if re.match(r'^\s*[🔗📋✅❗⚠️]\s*(critère|dépendance|livrable|risque)', line_lower):
+            return True
+            
+        return False
+    
     def extract_priority(self, text: str) -> Optional[str]:
         """Extrait la priorité du texte."""
         text_lower = text.lower()
@@ -85,11 +131,15 @@ class TextToTeamworkConverter:
             if not line:
                 continue
                 
-            # Supprimer les marqueurs communs
-            line = re.sub(r'^[#\*\-=]+\s*', '', line)
+            # Supprimer les marqueurs communs et emojis
+            line = re.sub(r'^[#\*\-=✅✓•]+\s*', '', line)
             line = re.sub(r'\s*[#\*\-=]+$', '', line)
             line = re.sub(r'📌.*?:', '', line)
             line = re.sub(r'🎯.*?:', '', line)
+            
+            # Nettoyer "Liste des Tâches" qui est souvent un en-tête, pas le titre du projet
+            if 'liste' in line.lower() and 'tâche' in line.lower():
+                continue
             
             if line and len(line) > 5:  # Titre raisonnable
                 return line.strip()
@@ -191,6 +241,13 @@ class TextToTeamworkConverter:
         for line in lines:
             line = line.strip()
             if not line:
+                continue
+            
+            # Ignorer les lignes qui ne sont pas des vraies tâches
+            if self.should_ignore_line(line):
+                # Ajouter à la tâche courante comme description si on en a une
+                if current_task_lines:
+                    current_task_lines.append(line)
                 continue
             
             # Vérifier si c'est une nouvelle tâche
@@ -310,6 +367,24 @@ class TextToTeamworkConverter:
     
     def preview_conversion(self, text: str) -> pd.DataFrame:
         """Prévisualise la conversion sans sauvegarder."""
+        
+        # Essayer d'abord avec l'IA si disponible
+        if self.use_ai and self.ai_parser:
+            try:
+                project_title = self.extract_project_title(text)
+                ai_tasks = self.ai_parser.parse_with_ai(text, project_title)
+                
+                if ai_tasks:
+                    print("✨ Parsing avec IA réussi")
+                    return pd.DataFrame(ai_tasks, columns=self.columns)
+                else:
+                    print("⚠️ IA n'a pas pu parser - Fallback vers parser classique")
+                    
+            except Exception as e:
+                print(f"⚠️ Erreur IA - Fallback vers parser classique: {e}")
+        
+        # Fallback vers le parser classique
+        print("🔧 Utilisation du parser classique")
         tasks = self.parse_text_to_tasks(text)
         return pd.DataFrame(tasks, columns=self.columns)
 

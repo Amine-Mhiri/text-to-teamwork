@@ -102,14 +102,23 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Environments
+# Environments et clés secrètes
 .env
+.env.local
+.env.production
+.env.staging
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Clés API et secrets
+*.key
+*_key.txt
+secrets/
+config/local_*
 
 # Spyder project settings
 .spyderproject
@@ -140,8 +149,10 @@ cython_debug/
 
 # Fichiers temporaires de test
 *test*.xlsx
+*test*.py
 example_output.xlsx
 test_output.xlsx
+test_ai_integration.py
 
 # Fichiers Windows
 Thumbs.db

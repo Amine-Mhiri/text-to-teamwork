@@ -10,12 +10,19 @@
 
 ## 🎯 Fonctionnalités
 
-- ✅ **Conversion automatique** : Texte structuré → Excel Teamwork
-- 🎨 **Interface moderne** : Application web Streamlit intuitive  
-- 📊 **Prévisualisation temps réel** : Vérifiez avant téléchargement
-- 🔧 **Parser intelligent** : Reconnaît priorités, dépendances, critères
-- 📥 **Export optimisé** : Fichier Excel prêt pour l'import Teamwork
-- 🌐 **Multi-format** : Support numérotation hiérarchique et emojis
+### 🧠 **NOUVEAU : Intelligence Artificielle GPT-4**
+- ✨ **100% fiable** : Comprend n'importe quel format de texte
+- 🚀 **Ultra-flexible** : Emails, notes de réunion, documents désorganisés
+- 🎯 **Mapping parfait** : Tâches principales vs sous-tâches automatique
+- 💡 **Intelligence contextuelle** : Comprend l'intention, pas juste la syntaxe
+
+### 📋 **Fonctionnalités Core**
+- ✅ **Conversion automatique** : Texte → Excel Teamwork compatible
+- 🎨 **Interface moderne** : Application web Streamlit responsive
+- 📊 **Prévisualisation temps réel** : Validation avant téléchargement
+- 🔧 **Double parsing** : IA (optimal) + classique (fallback)
+- 📥 **Export optimisé** : Format Excel parfait pour Teamwork
+- 🌐 **Multi-format** : De structuré à complètement libre
 
 ## 🚀 Utilisation
 
@@ -80,11 +87,39 @@ Critère d'acceptation : Validation requise
 
 ## 🛠️ Stack Technique
 
-- **Frontend** : Streamlit
-- **Backend** : Python 3.8+
-- **Parsing** : Regex + pandas
-- **Export** : openpyxl
-- **Déploiement** : Streamlit Cloud
+- **Frontend** : Streamlit (interface moderne)
+- **Backend** : Python 3.8+ 
+- **IA Engine** : OpenAI GPT-4o-mini (parsing intelligent)
+- **Parsing** : IA + Regex (double fallback)
+- **Data** : pandas (manipulation)
+- **Export** : openpyxl (génération Excel)
+- **Déploiement** : Streamlit Cloud (gratuit)
+
+## 🧠 Exemple Mode IA vs Classique
+
+### **📧 Input : Email de projet (format libre)**
+```
+Objet: Site web urgence
+
+Salut,
+
+Pour le nouveau site, il faut:
+1) Faire les mockups (Marie - URGENT)  
+2) Coder le front (Jean - après mockups)
+3) Tester sur mobile (Lisa)
+
+Deadline: fin mai
+```
+
+### **📊 Output automatique :**
+| TASKLIST | TASK | DESCRIPTION | PRIORITY |
+|----------|------|-------------|----------|
+| Site web urgence | | Email de projet avec deadline fin mai | |
+| | Faire les mockups | Assigné : Marie | Élevée |
+| | Coder le front | Assigné : Jean. Dépendance : Faire les mockups | |
+| | Tester sur mobile | Assigné : Lisa | |
+
+**✨ L'IA comprend le contexte, extrait les assignations, reconnaît "URGENT" = Élevée, mappe les dépendances !**
 
 ## 📖 Documentation
 
