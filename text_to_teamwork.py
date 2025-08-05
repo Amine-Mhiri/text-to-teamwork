@@ -57,6 +57,10 @@ class TextToTeamworkConverter:
             r'livrable\s*:',
             r'risque\s*:',
             r'description\s*:',
+            r'liste\s+des\s+tâches',
+            r'objectif\s+général',
+            r'jalon\s+principal',
+            r'gestion\s+des\s+risques',
         ]
         
         # Pattern pour détecter le niveau de hiérarchie
@@ -106,7 +110,12 @@ class TextToTeamworkConverter:
         if '.' in number:
             return False  # Sous-tâche (ex: DC-DM-001.1, 2.5.1)
         else:
-            return True   # Tâche principale (ex: DC-DM-001, 2)
+            # Pour les numérotations simples (1, 2, 3), traiter comme sous-tâches par défaut
+            # sauf si c'est un code spécifique (DC-DM-001)
+            if re.match(r'^[A-Z]{2,}-[A-Z]{2,}-\d+\s*[-–]', task_text):
+                return True   # Tâche principale (ex: DC-DM-001)
+            else:
+                return False  # Sous-tâche (ex: 1., 2., 3.)
     
     def should_ignore_line(self, line: str) -> bool:
         """Vérifie si une ligne doit être ignorée car ce n'est pas une vraie tâche."""
@@ -122,7 +131,11 @@ class TextToTeamworkConverter:
                 return True
         
         # Ignorer les lignes qui commencent par des emojis de description
-        if re.match(r'^\s*[🔗📋✅❗⚠️]\s*(critère|dépendance|livrable|risque)', line_lower):
+        if re.match(r'^\s*[🔗📋✅❗⚠️📌🎯]\s*(critère|dépendance|livrable|risque|liste|objectif|jalon)', line_lower):
+            return True
+            
+        # Ignorer spécifiquement les en-têtes de section
+        if re.match(r'^\s*[✅📌🎯]\s+.*?(liste|objectif|jalon)', line_lower):
             return True
             
         return False
