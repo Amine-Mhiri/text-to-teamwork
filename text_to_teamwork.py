@@ -121,6 +121,32 @@ class TextToTeamworkConverter:
                 return priority
         return None
     
+    def _normalize_priorities(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Normalise toutes les priorités en anglais."""
+        if 'PRIORITY' in df.columns:
+            # Mapping pour forcer la conversion des priorités françaises restantes
+            priority_map = {
+                'Élevée': 'High',
+                'élevée': 'High',
+                'Elevee': 'High',
+                'elevee': 'High',
+                'Haute': 'High',
+                'haute': 'High',
+                'Moyenne': 'Medium',
+                'moyenne': 'Medium',
+                'Moyen': 'Medium',
+                'moyen': 'Medium',
+                'Faible': 'Low',
+                'faible': 'Low',
+                'Basse': 'Low',
+                'basse': 'Low'
+            }
+            
+            # Appliquer la normalisation
+            df['PRIORITY'] = df['PRIORITY'].replace(priority_map)
+        
+        return df
+    
     def extract_project_title(self, text: str) -> str:
         """Extrait le titre du projet du texte."""
         lines = text.strip().split('\n')
@@ -346,6 +372,9 @@ class TextToTeamworkConverter:
             # Créer le DataFrame
             df = pd.DataFrame(tasks, columns=self.columns)
             
+            # Normaliser les priorités en anglais
+            df = self._normalize_priorities(df)
+            
             # Sauvegarder en Excel
             with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False, sheet_name='Teamwork Import')
@@ -376,7 +405,10 @@ class TextToTeamworkConverter:
                 
                 if ai_tasks:
                     print("✨ Parsing avec IA réussi")
-                    return pd.DataFrame(ai_tasks, columns=self.columns)
+                    df = pd.DataFrame(ai_tasks, columns=self.columns)
+                    # Normaliser les priorités en anglais
+                    df = self._normalize_priorities(df)
+                    return df
                 else:
                     print("⚠️ IA n'a pas pu parser - Fallback vers parser classique")
                     
@@ -386,7 +418,11 @@ class TextToTeamworkConverter:
         # Fallback vers le parser classique
         print("🔧 Utilisation du parser classique")
         tasks = self.parse_text_to_tasks(text)
-        return pd.DataFrame(tasks, columns=self.columns)
+        df = pd.DataFrame(tasks, columns=self.columns)
+        
+        # Normaliser les priorités en anglais
+        df = self._normalize_priorities(df)
+        return df
 
 # Fonction utilitaire pour tester
 def test_converter():
